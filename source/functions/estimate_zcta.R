@@ -1,7 +1,7 @@
 #' Create County-level ZCTA Population Estimates
 #'
 #'
-estimate_zcta <- function(input, year, dataset, state, county, table, variable){
+estimate_zcta <- function(input, year, dataset, state, county, table, variable, class){
 
   if (dataset == "acs"){
 
@@ -44,8 +44,11 @@ estimate_zcta <- function(input, year, dataset, state, county, table, variable){
 
   # interpolate data
   out <- areal::aw_interpolate(input$target, tid = "GEOID_ZCTA", source = demos, sid = "GEOID_ZCTA", weight = "total",
-                               output = "sf", extensive = names)
-  out <- dplyr::select(out, GEOID_ZCTA, names, geometry)
+                               output = class, extensive = names)
+
+  if (class == "sf"){
+    out <- dplyr::select(out, GEOID_ZCTA, names, geometry)
+  }
 
   # return output
   return(out)
