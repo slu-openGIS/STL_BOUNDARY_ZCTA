@@ -20,6 +20,7 @@ create_zcta <- function(source, state, county){
   target <- dplyr::select(target, GEOID_ZCTA)
   target <- dplyr::group_by(target, GEOID_ZCTA)
   target <- dplyr::summarise(target)
+  target <- sf::st_collection_extract(target, "POLYGON")
 
   # process source object
   source <- dplyr::filter(source, GEOID_ZCTA %in% target$GEOID_ZCTA)

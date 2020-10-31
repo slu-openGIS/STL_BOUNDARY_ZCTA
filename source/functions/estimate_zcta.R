@@ -42,9 +42,65 @@ estimate_zcta <- function(input, year, dataset, state, county, table, variable, 
   # combine with zip geometry
   demos <- dplyr::left_join(input$source, demos, by = "GEOID_ZCTA")
 
+  # pull out duplicate geometries
+  # only applies to Lincoln and Warren Counties
+  if (county %in% c("113", "219")){
+
+    ## pull out duplicated zips
+    if (county == "113"){
+
+      partial_a1 <- dplyr::filter(input$target, GEOID_ZCTA == "63383")
+      partial_a1 <- dplyr::filter(partial_a1, row_number() == 1)
+
+      partial_a2 <- dplyr::filter(input$target, GEOID_ZCTA == "63383")
+      partial_a2 <- dplyr::filter(partial_a2, row_number() == 2)
+
+      input$target <- dplyr::filter(input$target, GEOID_ZCTA %in% "63383" == FALSE)
+      input$target <- rbind(input$target, partial_a1)
+
+    } else if (county == "219"){
+
+      partial_a1 <- dplyr::filter(input$target, GEOID_ZCTA == "63348")
+      partial_a1 <- dplyr::filter(partial_a1, row_number() == 1)
+
+      partial_a2 <- dplyr::filter(input$target, GEOID_ZCTA == "63348")
+      partial_a2 <- dplyr::filter(partial_a2, row_number() == 2)
+
+      partial_b1 <- dplyr::filter(input$target, GEOID_ZCTA == "63351")
+      partial_b1 <- dplyr::filter(partial_b1, row_number() == 1)
+
+      partial_b2 <- dplyr::filter(input$target, GEOID_ZCTA == "63351")
+      partial_b2 <- dplyr::filter(partial_b2, row_number() == 2)
+
+      input$target <- dplyr::filter(input$target, GEOID_ZCTA %in% c("63348", "63351") == FALSE)
+      input$target <- rbind(input$target, partial_a1, partial_b1)
+
+    }
+
+  }
+
   # interpolate data
   out <- areal::aw_interpolate(input$target, tid = "GEOID_ZCTA", source = demos, sid = "GEOID_ZCTA", weight = "total",
                                output = class, extensive = names)
+
+  if (county == "113"){
+
+    partial_a2_result <- areal::aw_interpolate(partial_a2, tid = "GEOID_ZCTA", source = demos, sid = "GEOID_ZCTA", weight = "total",
+                                               output = class, extensive = names)
+
+    out <- rbind(out, partial_a2_result)
+
+  } else if (county == "219"){
+
+    partial_a2_result <- areal::aw_interpolate(partial_a2, tid = "GEOID_ZCTA", source = demos, sid = "GEOID_ZCTA", weight = "total",
+                                               output = class, extensive = names)
+
+    partial_b2_result <- areal::aw_interpolate(partial_b2, tid = "GEOID_ZCTA", source = demos, sid = "GEOID_ZCTA", weight = "total",
+                                               output = class, extensive = names)
+
+    out <- rbind(out, partial_a2_result, partial_b2_result)
+
+  }
 
   if (class == "sf"){
     out <- dplyr::select(out, GEOID_ZCTA, names, geometry)
