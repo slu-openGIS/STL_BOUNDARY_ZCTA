@@ -12,6 +12,8 @@
 library(dplyr)
 library(readr)
 library(sf)
+library(tigris)
+library(tidycensus)
 
 ## functions
 source("source/functions/get_zcta.R")
@@ -560,6 +562,99 @@ rm(poverty)
 
 ## clean-up
 rm(geometry, focal_counties)
+
+# === # === # === # === # === # === # === # === # === # === # === # === # === #
+
+# create illinois data
+
+## create state of illinois boundary
+il <- states(class = "sf") %>%
+  filter(GEOID == "17") %>%
+  select(GEOID) %>%
+  st_transform(crs = 6350)
+
+## combine with ZCTA boundaries
+il_zips <- st_intersection(zips, il) %>%
+  select(GEOID_ZCTA) %>%
+  st_collection_extract(type = "POLYGON")
+
+## create metro east boundary
+metro_east <- st_read("data/source/daily_snapshot_mo_xl.geojson", crs = 4326, stringsAsFactors = FALSE) %>%
+  filter(state == "Illinois" & GEOID != "17003") %>%
+  select(state) %>%
+  group_by(state) %>%
+  summarise() %>%
+  # st_collection_extract(type = "POLYGON") %>%
+  st_transform(crs = 6350) %>%
+  mutate(region = "Metro East") %>%
+  select(region)
+
+## intersect IL ZCTAs with metro east boundary to create list of ZIPs to include
+intersect_zips <- st_intersection(il_zips, metro_east) %>%
+  st_collection_extract(type = "POLYGON")
+
+## create metro east zip geometry,
+metro_east_zips <- filter(il_zips, GEOID_ZCTA %in% c(intersect_zips$GEOID_ZCTA, "62092", "62016", "62098"))
+
+## clean-up
+rm(il, metro_east, intersect_zips)
+
+## write geometric data
+metro_east_zips %>%
+  st_transform(crs = 4326) %>%
+  st_write("data/geometries/STL_ZCTA_Metro_East.geojson", delete_dsn = TRUE)
+
+## total population
+total_pop <- get_acs(geography = "zcta", year = 2018, dataset = "acs",
+                variable = "B01003_001", output = "wide") %>%
+  filter(GEOID %in% metro_east_zips$GEOID_ZCTA)
+
+### calculate percentages
+total_pop %>%
+  mutate(total_pop = round(B01003_001E)) %>%
+  rename(GEOID_ZCTA = GEOID) %>%
+  select(GEOID_ZCTA, total_pop) -> total_pop
+
+### write data
+write_csv(total_pop, "data/demographics/STL_ZCTA_Metro_East_Total_Pop.csv")
+
+### clean-up
+rm(total_pop)
+
+## race
+race <- get_acs(geography = "zcta", year = 2018, dataset = "acs",
+                   variable = c("B02001_001", "B02001_002", "B02001_003"), output = "wide") %>%
+  filter(GEOID %in% metro_east_zips$GEOID_ZCTA)
+
+### calculate percentages
+race %>%
+  mutate(wht_pct = B02001_002E/B02001_001E*100) %>%
+  mutate(blk_pct = B02001_003E/B02001_001E*100) %>%
+  rename(GEOID_ZCTA = GEOID) %>%
+  select(GEOID_ZCTA, wht_pct, blk_pct) -> race
+
+### write data
+write_csv(race, "data/demographics/STL_ZCTA_Metro_East_Race.csv")
+
+### clean-up
+rm(race)
+
+## poverty
+poverty <- get_acs(geography = "zcta", year = 2018, dataset = "acs",
+                 variable = c("B17001_001", "B17001_002"), output = "wide") %>%
+  filter(GEOID %in% metro_east_zips$GEOID_ZCTA)
+
+### calculate percentages
+poverty %>%
+  mutate(pvty_pct = B17001_002E/B17001_001E*100) %>%
+  rename(GEOID_ZCTA = GEOID) %>%
+  select(GEOID_ZCTA, pvty_pct) -> poverty
+
+### write data
+write_csv(poverty, "data/demographics/STL_ZCTA_Metro_East_Poverty.csv")
+
+### clean-up
+rm(poverty)
 
 # === # === # === # === # === # === # === # === # === # === # === # === # === #
 
