@@ -498,6 +498,73 @@ rm(geometry, focal_counties)
 
 # === # === # === # === # === # === # === # === # === # === # === # === # === #
 
+# build Franklin County data ####
+## define counties
+focal_counties <- "071"
+
+## create ZCTA geometry
+### create
+geometry <- create_zcta(source = zips, state = 29, county = focal_counties)
+
+### write geometric data
+geometry$target %>%
+  st_transform(crs = 4326) %>%
+  st_write("data/geometries/STL_ZCTA_Franklin_County.geojson", delete_dsn = TRUE)
+
+## create total population estimates
+### create
+total_pop <- estimate_zcta(input = geometry, year = 2018, dataset = "acs", state = 29, county = focal_counties,
+                           variable = "B01003_001", class = "tibble")
+
+### calculate percentages
+total_pop %>%
+  mutate(total_pop = round(B01003_001E)) %>%
+  select(GEOID_ZCTA, total_pop) -> total_pop
+
+### write data
+write_csv(total_pop, "data/demographics/STL_ZCTA_Franklin_County_Total_Pop.csv")
+
+### clean-up
+rm(total_pop)
+
+## create population race estimates
+### create
+race <- estimate_zcta(input = geometry, year = 2018, dataset = "acs", state = 29, county = focal_counties,
+                      variable = c("B02001_001", "B02001_002", "B02001_003"), class = "tibble")
+
+### calculate percentages
+race %>%
+  mutate(wht_pct = B02001_002E/B02001_001E*100) %>%
+  mutate(blk_pct = B02001_003E/B02001_001E*100) %>%
+  select(GEOID_ZCTA, wht_pct, blk_pct) -> race
+
+### write data
+write_csv(race, "data/demographics/STL_ZCTA_Franklin_County_Race.csv")
+
+### clean-up
+rm(race)
+
+## create population poverty estimates
+### create
+poverty <- estimate_zcta(input = geometry, year = 2018, dataset = "acs", state = 29, county = focal_counties,
+                         variable = c("B17001_001", "B17001_002"), class = "tibble")
+
+### calculate percentages
+poverty %>%
+  mutate(pvty_pct = B17001_002E/B17001_001E*100) %>%
+  select(GEOID_ZCTA, pvty_pct) -> poverty
+
+### write data
+write_csv(poverty, "data/demographics/STL_ZCTA_Franklin_County_Poverty.csv")
+
+### clean-up
+rm(poverty)
+
+## clean-up
+rm(geometry, focal_counties)
+
+# === # === # === # === # === # === # === # === # === # === # === # === # === #
+
 # build Lincoln County data ####
 ## define counties
 focal_counties <- "113"
@@ -655,6 +722,73 @@ write_csv(poverty, "data/demographics/STL_ZCTA_Metro_East_Poverty.csv")
 
 ### clean-up
 rm(poverty)
+
+# === # === # === # === # === # === # === # === # === # === # === # === # === #
+
+# build regional data ####
+## define counties
+focal_counties <- c("099", "113", "183", "189", "219", "510")
+
+## create ZCTA geometry
+### create
+geometry <- create_zcta(source = zips, state = 29, county = focal_counties)
+
+### write geometric data
+geometry$target %>%
+  st_transform(crs = 4326) %>%
+  st_write("data/geometries/STL_ZCTA_Metro_West.geojson", delete_dsn = TRUE)
+
+## create total population estimates
+### create
+total_pop <- estimate_zcta(input = geometry, year = 2018, dataset = "acs", state = 29, county = focal_counties,
+                           variable = "B01003_001", class = "tibble")
+
+### calculate percentages
+total_pop %>%
+  mutate(total_pop = round(B01003_001E)) %>%
+  select(GEOID_ZCTA, total_pop) -> total_pop
+
+### write data
+write_csv(total_pop, "data/demographics/STL_ZCTA_Metro_West_Total_Pop.csv")
+
+### clean-up
+rm(total_pop)
+
+## create population race estimates
+### create
+race <- estimate_zcta(input = geometry, year = 2018, dataset = "acs", state = 29, county = focal_counties,
+                      variable = c("B02001_001", "B02001_002", "B02001_003"), class = "tibble")
+
+### calculate percentages
+race %>%
+  mutate(wht_pct = B02001_002E/B02001_001E*100) %>%
+  mutate(blk_pct = B02001_003E/B02001_001E*100) %>%
+  select(GEOID_ZCTA, wht_pct, blk_pct) -> race
+
+### write data
+write_csv(race, "data/demographics/STL_ZCTA_Metro_West_Race.csv")
+
+### clean-up
+rm(race)
+
+## create population poverty estimates
+### create
+poverty <- estimate_zcta(input = geometry, year = 2018, dataset = "acs", state = 29, county = focal_counties,
+                         variable = c("B17001_001", "B17001_002"), class = "tibble")
+
+### calculate percentages
+poverty %>%
+  mutate(pvty_pct = B17001_002E/B17001_001E*100) %>%
+  select(GEOID_ZCTA, pvty_pct) -> poverty
+
+### write data
+write_csv(poverty, "data/demographics/STL_ZCTA_Metro_West_Poverty.csv")
+
+### clean-up
+rm(poverty)
+
+## clean-up
+rm(geometry, focal_counties)
 
 # === # === # === # === # === # === # === # === # === # === # === # === # === #
 
