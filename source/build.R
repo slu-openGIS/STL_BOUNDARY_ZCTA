@@ -727,7 +727,7 @@ rm(poverty)
 
 # build regional data ####
 ## define counties
-focal_counties <- c("099", "113", "183", "189", "219", "510")
+focal_counties <- c("071", "099", "113", "183", "189", "219", "510")
 
 ## create ZCTA geometry
 ### create

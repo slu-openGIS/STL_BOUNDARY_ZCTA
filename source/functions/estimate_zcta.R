@@ -88,7 +88,7 @@ estimate_zcta <- function(input, year, dataset, state, county, table, variable, 
 
       }
 
-  } else if (length(county) > 1 & any(focal_counties == "219")){
+  } else if (length(county) > 1){ #  & any(focal_counties == "219")
 
     partial_a1 <- dplyr::filter(input$target, GEOID_ZCTA == "63351")
     partial_a1 <- dplyr::filter(partial_a1, row_number() == 1)
@@ -96,8 +96,14 @@ estimate_zcta <- function(input, year, dataset, state, county, table, variable, 
     partial_a2 <- dplyr::filter(input$target, GEOID_ZCTA == "63351")
     partial_a2 <- dplyr::filter(partial_a2, row_number() == 2)
 
-    input$target <- dplyr::filter(input$target, GEOID_ZCTA %in% "63351" == FALSE)
-    input$target <- rbind(input$target, partial_a1)
+    partial_b1 <- dplyr::filter(input$target, GEOID_ZCTA == "63091")
+    partial_b1 <- dplyr::filter(partial_a1, row_number() == 1)
+
+    partial_b2 <- dplyr::filter(input$target, GEOID_ZCTA == "63091")
+    partial_b2 <- dplyr::filter(partial_a2, row_number() == 2)
+
+    input$target <- dplyr::filter(input$target, GEOID_ZCTA %in% c("63351", "63091") == FALSE)
+    input$target <- rbind(input$target, partial_a1, partial_b1)
 
   }
 
@@ -132,12 +138,15 @@ estimate_zcta <- function(input, year, dataset, state, county, table, variable, 
       out <- rbind(out, partial_a2_result)
 
     }
-  } else if (length(county) > 1 & any(focal_counties == "219")){
+  } else if (length(county) > 1){ # & any(focal_counties == "219")
 
     partial_a2_result <- areal::aw_interpolate(partial_a2, tid = "GEOID_ZCTA", source = demos, sid = "GEOID_ZCTA", weight = "total",
                                                output = class, extensive = names)
 
-    out <- rbind(out, partial_a2_result)
+    partial_b2_result <- areal::aw_interpolate(partial_b2, tid = "GEOID_ZCTA", source = demos, sid = "GEOID_ZCTA", weight = "total",
+                                               output = class, extensive = names)
+
+    out <- rbind(out, partial_a2_result, partial_b2_result)
 
   }
 
