@@ -10,7 +10,7 @@ create_zcta <- function(source, state, county){
   }
 
   # download counties
-  counties <- tigris::counties(state = state, year = 2018, class = "sf")
+  counties <- tigris::counties(state = state, year = 2019, class = "sf")
   counties <- dplyr::filter(counties, COUNTYFP %in% county)
   counties <- sf::st_transform(counties, crs = 6350)
 
